@@ -1,0 +1,75 @@
+			+-------------------------+
+			|      CompSci 143A       |
+			| PROJECT 0: Getting Real |
+			|     DESIGN DOCUMENT     |
+			+-------------------------+
+				   
+---- AUTHOR ----
+
+>> Fill in your name and email address.
+
+Ethan Duong <eduong100@gmail.com>
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, or notes for the
+>> TAs, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+ANSWER: No comments. Talked to Mahyar for help on part 2.
+
+			     Booting Pintos
+			     ==============
+
+---- QUESTIONS ---- 
+>> Put the screenshots of Pintos running in src/p0.
+>> A1: Is there any particular issue that you would like us to know?
+ANSWER: No issues so far with running Pintos.
+
+			     Kernel Monitor
+			     ==============
+
+---- DATA STRUCTURES ----
+
+>> C1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+ANSWER: No such data structures were changed or needed for 
+implementation of the Kernel Monitor. Instead, all data structures
+were defined locally. Of the locally defined variables we have the 
+following:
+>> int i = 0, increment = 255, curSize = increment;
+The above variables handle writing to the buffer with i being our
+current location, curSize being the current size of the buffer,
+and increment being the amount of new memory we ask for each time
+we hit the max size.
+>> uint8_t *bytes = (uint8_t *)malloc(increment * sizeof(uint8_t));
+The above represents our buffer which stores user input
+>> char *message;
+The above represents the c-string we use to process the input once
+the user enters a newline.
+
+---- ALGORITHMS ----
+>> C2: Explain how you read and write to the console for the kernel monitor.
+
+Answer: User input is read character by character. If the character
+is not a newline then it is added to the buffer. We resize the 
+buffer if i >= curSize (asking for increment bytes of additional
+memory). If i is reset to 0 (ie the user hit a newline and we
+finshed processing their input) then the buffer is sized down to
+its initial size. When the user hits a newline, we convert the 
+buffer to a c-string and run string comparisons to find if the user
+entered "whoami", "exit", or something else. We process each of these
+cases as specified in the docs. When we exit, we make sure to free
+memory associated with the buffer.
+
+>> C3: Any additional enhancement you implement?
+
+Answer: We used dynamic memory instead of a static-sized buffer to
+create a more user-friendly and secure experience. Likewise, we 
+print what key the user entered for readability. The only issue
+is that reading character by character is a slow process which makes
+me wonder if an implementation closer to cin exists.

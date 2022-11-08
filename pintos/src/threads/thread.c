@@ -92,7 +92,7 @@ void thread_init(void)
   lock_init(&tid_lock);
   list_init(&ready_list);
   list_init(&all_list);
-
+  list_init(&sleeping_threads);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread();
   init_thread(initial_thread, "main", PRI_DEFAULT);
@@ -572,8 +572,39 @@ uint32_t thread_stack_ofs = offsetof(struct thread, stack);
 
 void thread_sleep(int64_t wakeupTime)
 {
+  // Declare pointer to current thread
+  struct thread *curThread;
+  // Disable interrupts
+  enum intr_level old_level = intr_disable();
+
+  // Get pointer to current thread and update its wakeuptime
+  curThread = thread_current();
+  curThread->wakeup_time = wakeupTime;
+  // Push curThread to back of sleeping_threads list
+  list_push_back(&sleeping_threads, &(curThread->elem));
+  // Block curThread
+  thread_block();
+  // Restore interrupts
+  intr_set_level(old_level);
 }
 
 void thread_wakeup(int64_t curTime)
 {
+  enum intr_level old_level = intr_disable();
+  struct list_elem *curElement = list_begin(&sleeping_threads);
+  while (curElement != list_end(&sleeping_threads))
+  {
+    struct thread *curThread = list_entry(curElement, struct thread, elem);
+
+    if (curTime >= curThread->wakeup_time)
+    {
+      curElement = list_remove(&(curThread->elem));
+      thread_unblock(curThread);
+    }
+    else
+    {
+      curElement = list_next(curElement);
+    }
+  }
+  intr_set_level(old_level);
 }

@@ -194,16 +194,19 @@ void lock_acquire(struct lock *lock)
   ASSERT(!lock_held_by_current_thread(lock));
   struct thread *current_thread = thread_current();
   // If some thread is holding the lock
-  if (lock->holder)
+  printf("PRINTING: ");
+  printf(lock->holder);
+  if (lock->holder != NULL)
   {
     current_thread->waiting_for = lock;
-    list_insert_ordered(&lock->holder->donators, &(current_thread->donation_elem), compare_donation_priority, 0);
+    // list_init(&lock->holder->donators);
+    // list_insert_ordered(&lock->holder->donators, &(current_thread->donation_elem), compare_donation_priority, 0);
     // donate_priority();
   }
   sema_down(&lock->semaphore);
 
   current_thread->waiting_for = NULL;
-  lock->holder = thread_current();
+  lock->holder = current_thread;
 }
 
 /* Tries to acquires LOCK and returns true if successful or false

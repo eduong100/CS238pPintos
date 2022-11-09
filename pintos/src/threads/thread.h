@@ -93,10 +93,10 @@ struct thread
 
    /* Shared between thread.c and synch.c. */
    int64_t wakeup_time;
+   struct list donators;
    struct list_elem elem;          /* List element. */
    struct list_elem donation_elem; /* Donations list element*/
    struct lock *waiting_for;
-   struct list donators;
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */

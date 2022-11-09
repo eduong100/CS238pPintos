@@ -524,16 +524,16 @@ init_thread(struct thread *t, const char *name, int priority)
   ASSERT(PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT(name != NULL);
 
+  t->waiting_for = NULL;
+  t->initial_priority = priority;
+  list_init(&t->donators);
+
   memset(t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
   strlcpy(t->name, name, sizeof t->name);
   t->stack = (uint8_t *)t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
-
-  t->waiting_for = NULL;
-  t->initial_priority = priority;
-  list_init(&(t->donators));
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);

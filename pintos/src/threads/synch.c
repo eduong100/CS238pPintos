@@ -192,21 +192,28 @@ void lock_acquire(struct lock *lock)
   ASSERT(lock != NULL);
   ASSERT(!intr_context());
   ASSERT(!lock_held_by_current_thread(lock));
+  enum intr_level old_level = intr_disable();
   struct thread *current_thread = thread_current();
   // If some thread is holding the lock
-  printf("PRINTING: ");
-  printf(lock->holder);
-  if (lock->holder != NULL)
+
+  if (lock->holder != NULL && lock->holder->name != "main")
   {
+    printf("CHECK ME: %p\n", current_thread->donators.head.next);
+    // printf("PRINTING: %d\n", lock->holder->initial_priority);
+    // printf(&lock->holder->name);
+    printf("PRINTING: %d\n", current_thread->priority);
+    printf(&current_thread->name);
     current_thread->waiting_for = lock;
     // list_init(&lock->holder->donators);
     // list_insert_ordered(&lock->holder->donators, &(current_thread->donation_elem), compare_donation_priority, 0);
+    // list_insert_ordered(&current_thread->donators, &(current_thread->donation_elem), compare_donation_priority, 0);
     // donate_priority();
   }
   sema_down(&lock->semaphore);
 
   current_thread->waiting_for = NULL;
   lock->holder = current_thread;
+  intr_set_level(old_level);
 }
 
 /* Tries to acquires LOCK and returns true if successful or false

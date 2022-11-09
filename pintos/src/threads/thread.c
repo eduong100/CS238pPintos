@@ -526,7 +526,9 @@ init_thread(struct thread *t, const char *name, int priority)
 
   t->waiting_for = NULL;
   t->initial_priority = priority;
+  printf("INITIALIZE LIST: %p\n", t->donators.head.next);
   list_init(&t->donators);
+  printf("AFTER INITIALIZE: %p\n", t->donators.head.next);
 
   memset(t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;

@@ -71,7 +71,7 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
-bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux)
+bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
 {
   return list_entry(left, struct thread, elem)->priority >
          list_entry(right, struct thread, elem)->priority;

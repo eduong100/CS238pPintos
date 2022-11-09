@@ -92,12 +92,11 @@ struct thread
    struct list_elem allelem;  /* List element for all threads list. */
 
    /* Shared between thread.c and synch.c. */
+   int64_t wakeup_time;
    struct list_elem elem;          /* List element. */
    struct list_elem donation_elem; /* Donations list element*/
    struct lock *waiting_for;
    struct list donators;
-
-   int64_t wakeup_time;
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */
@@ -147,7 +146,7 @@ int thread_get_load_avg(void);
 void thread_sleep(int64_t wakeupTime);
 void thread_wakeup(int64_t curTime);
 
-bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux);
+bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 bool compare_donation_priority(const struct list_elem *left, const struct list_elem *right, void *aux UNUSED);
 void donate_priority(void);
 void free_donators(struct list *waiters, struct thread *holder);

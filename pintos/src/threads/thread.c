@@ -321,7 +321,7 @@ void thread_yield(void)
 
   old_level = intr_disable();
   if (cur != idle_thread)
-  list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
+    list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
   // list_push_back(&ready_list, &cur->elem);
 
   cur->status = THREAD_READY;
@@ -476,6 +476,9 @@ init_thread(struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *)t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  list_init(&t->donators);
+  printf("AFTER INITIALIZE: %p\n", t->donators.head.next);
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);
@@ -633,4 +636,3 @@ void thread_wakeup(int64_t curTime)
   }
   intr_set_level(old_level);
 }
-

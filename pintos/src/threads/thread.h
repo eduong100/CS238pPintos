@@ -94,7 +94,7 @@ struct thread
    struct list_elem elem; /* List element. */
 
    int64_t wakeup_time;
-
+   struct list donators;
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */
@@ -141,10 +141,8 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
-
 void thread_sleep(int64_t wakeupTime);
 void thread_wakeup(int64_t curTime);
-
 
 bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux);
 void yield_to_highest(void);

@@ -677,7 +677,6 @@ void remove_with_lock(struct lock *lock)
   }
 }
 
-// AVOID LIST SORT IF POSSIBLE
 void refresh_priority(void)
 {
   struct thread *curr = thread_current();
@@ -685,12 +684,18 @@ void refresh_priority(void)
 
   if (list_empty(&curr->donations) == false)
   {
-    list_sort(&curr->donations, &thread_compare_priority, NULL);
-    struct thread *high;
-    high = list_entry(list_front(&curr->donations), struct thread, donation_elem);
-    if (high->priority > curr->priority)
+    int high = curr->priority;
+    struct list_elem *e;
+    for (e = list_begin(&curr->donations); e != list_end(&curr->donations); e = list_next(e))
     {
-      curr->priority = high->priority;
+      int curPrio = list_entry(e, struct thread, donation_elem)->priority;
+      if (curPrio > high)
+        high = curPrio;
+    }
+
+    if (high > curr->priority)
+    {
+      curr->priority = high;
     }
   }
 }

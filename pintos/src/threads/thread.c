@@ -87,6 +87,9 @@ void yield_to_highest(void)
     thread_yield();
   }
 }
+
+static struct list sleeping_threads;
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -107,7 +110,7 @@ void thread_init(void)
   lock_init(&tid_lock);
   list_init(&ready_list);
   list_init(&all_list);
-
+  list_init(&sleeping_threads);
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread();
   init_thread(initial_thread, "main", PRI_DEFAULT);
@@ -211,7 +214,9 @@ tid_t thread_create(const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock(t);
+
   yield_to_highest();
+
   return tid;
 }
 
@@ -246,8 +251,9 @@ void thread_unblock(struct thread *t)
 
   old_level = intr_disable();
   ASSERT(t->status == THREAD_BLOCKED);
-  // list_push_back(&ready_list, &t->elem);
+
   list_insert_ordered(&ready_list, &t->elem, thread_compare_priority, 0);
+
   t->status = THREAD_READY;
   intr_set_level(old_level);
 }
@@ -315,8 +321,9 @@ void thread_yield(void)
 
   old_level = intr_disable();
   if (cur != idle_thread)
-    list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
+  list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
   // list_push_back(&ready_list, &cur->elem);
+
   cur->status = THREAD_READY;
   schedule();
   intr_set_level(old_level);
@@ -587,3 +594,43 @@ allocate_tid(void)
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
 uint32_t thread_stack_ofs = offsetof(struct thread, stack);
+
+void thread_sleep(int64_t wakeupTime)
+{
+  // Declare pointer to current thread
+  struct thread *curThread;
+  // Disable interrupts
+  enum intr_level old_level = intr_disable();
+
+  // Get pointer to current thread and update its wakeuptime
+  curThread = thread_current();
+  curThread->wakeup_time = wakeupTime;
+  // Push curThread to back of sleeping_threads list
+  list_push_back(&sleeping_threads, &(curThread->elem));
+  // Block curThread
+  thread_block();
+  // Restore interrupts
+  intr_set_level(old_level);
+}
+
+void thread_wakeup(int64_t curTime)
+{
+  enum intr_level old_level = intr_disable();
+  struct list_elem *curElement = list_begin(&sleeping_threads);
+  while (curElement != list_end(&sleeping_threads))
+  {
+    struct thread *curThread = list_entry(curElement, struct thread, elem);
+
+    if (curTime >= curThread->wakeup_time)
+    {
+      curElement = list_remove(&(curThread->elem));
+      thread_unblock(curThread);
+    }
+    else
+    {
+      curElement = list_next(curElement);
+    }
+  }
+  intr_set_level(old_level);
+}
+

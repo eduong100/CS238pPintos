@@ -71,7 +71,25 @@ static void schedule(void);
 void thread_schedule_tail(struct thread *prev);
 static tid_t allocate_tid(void);
 
+bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux)
+{
+  return list_entry(left, struct thread, elem)->priority >
+         list_entry(right, struct thread, elem)->priority;
+}
+
+// Determine if the running thread or highest ready thread has higher priority
+// Yield if ready thread is higher
+void yield_to_highest(void)
+{
+  if (!list_empty(&ready_list) &&
+      thread_current()->priority < list_entry(list_front(&ready_list), struct thread, elem)->priority)
+  {
+    thread_yield();
+  }
+}
+
 static struct list sleeping_threads;
+
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
    general and it is possible in this case only because loader.S
@@ -197,6 +215,8 @@ tid_t thread_create(const char *name, int priority,
   /* Add to run queue. */
   thread_unblock(t);
 
+  yield_to_highest();
+
   return tid;
 }
 
@@ -231,7 +251,9 @@ void thread_unblock(struct thread *t)
 
   old_level = intr_disable();
   ASSERT(t->status == THREAD_BLOCKED);
-  list_push_back(&ready_list, &t->elem);
+
+  list_insert_ordered(&ready_list, &t->elem, thread_compare_priority, 0);
+
   t->status = THREAD_READY;
   intr_set_level(old_level);
 }
@@ -299,7 +321,9 @@ void thread_yield(void)
 
   old_level = intr_disable();
   if (cur != idle_thread)
-    list_push_back(&ready_list, &cur->elem);
+  list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
+  // list_push_back(&ready_list, &cur->elem);
+
   cur->status = THREAD_READY;
   schedule();
   intr_set_level(old_level);
@@ -325,6 +349,7 @@ void thread_foreach(thread_action_func *func, void *aux)
 void thread_set_priority(int new_priority)
 {
   thread_current()->priority = new_priority;
+  yield_to_highest();
 }
 
 /* Returns the current thread's priority. */
@@ -608,3 +633,4 @@ void thread_wakeup(int64_t curTime)
   }
   intr_set_level(old_level);
 }
+

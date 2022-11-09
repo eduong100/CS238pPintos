@@ -479,6 +479,8 @@ init_thread(struct thread *t, const char *name, int priority)
 
   list_init(&t->donators);
   printf("AFTER INITIALIZE: %p\n", t->donators.head.next);
+  t->waiting_for = NULL;
+  t->initial_priority = priority;
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);

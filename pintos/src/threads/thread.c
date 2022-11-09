@@ -348,7 +348,8 @@ void thread_foreach(thread_action_func *func, void *aux)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-  thread_current()->priority = new_priority;
+  thread_current()->init_priority = new_priority;
+  refresh_priority();
   yield_to_highest();
 }
 
@@ -477,10 +478,9 @@ init_thread(struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
-  list_init(&t->donators);
-  printf("AFTER INITIALIZE: %p\n", t->donators.head.next);
-  t->waiting_for = NULL;
-  t->initial_priority = priority;
+  t->init_priority = priority;
+  list_init(&t->donations);
+  t->wait_on_lock = NULL;
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);
@@ -637,4 +637,60 @@ void thread_wakeup(int64_t curTime)
     }
   }
   intr_set_level(old_level);
+}
+
+void donate_priority(void)
+{
+  int cnt = 0;
+  struct thread *t = thread_current();
+  int cur_priority = t->priority;
+
+  while (cnt < 9)
+  {
+    cnt++;
+    if (t->wait_on_lock == NULL)
+    {
+      break;
+    }
+
+    t = t->wait_on_lock->holder;
+    t->priority = cur_priority;
+  }
+}
+
+void remove_with_lock(struct lock *lock)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e = list_begin(&t->donations);
+
+  for (e; e != list_end((&t->donations));)
+  {
+    struct thread *cur = list_entry(e, struct thread, donation_elem);
+    if (cur->wait_on_lock == lock)
+    {
+      e = list_remove(e);
+    }
+    else
+    {
+      e = list_next(e);
+    }
+  }
+}
+
+// AVOID LIST SORT IF POSSIBLE
+void refresh_priority(void)
+{
+  struct thread *curr = thread_current();
+  curr->priority = curr->init_priority;
+
+  if (list_empty(&curr->donations) == false)
+  {
+    list_sort(&curr->donations, &thread_compare_priority, NULL);
+    struct thread *high;
+    high = list_entry(list_front(&curr->donations), struct thread, donation_elem);
+    if (high->priority > curr->priority)
+    {
+      curr->priority = high->priority;
+    }
+  }
 }

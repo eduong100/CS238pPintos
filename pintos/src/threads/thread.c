@@ -396,13 +396,13 @@ void thread_foreach(thread_action_func *func, void *aux)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-  struct thread *cur_thread = thread_current();
-  if (list_size(&cur_thread->donators) > 0 &&
-      list_entry(list_begin(&cur_thread->donators), struct thread, donation_elem)->priority >= new_priority)
-  {
-    return;
-  }
-  cur_thread->priority = new_priority;
+  // struct thread *cur_thread = thread_current();
+  // if (list_size(&cur_thread->donators) > 0 &&
+  //     list_entry(list_begin(&cur_thread->donators), struct thread, donation_elem)->priority >= new_priority)
+  // {
+  //   return;
+  // }
+  thread_current()->priority = new_priority;
   yield_to_highest();
 }
 

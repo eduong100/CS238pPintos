@@ -189,11 +189,21 @@ void lock_init(struct lock *lock)
    we need to sleep. */
 void lock_acquire(struct lock *lock)
 {
+  struct thread *current_thread = thread_current();
   ASSERT(lock != NULL);
   ASSERT(!intr_context());
   ASSERT(!lock_held_by_current_thread(lock));
 
+  // If some thread is holding the lock
+  if (lock->holder)
+  {
+    current_thread->waiting_for = lock;
+    list_insert_ordered(&lock->holder->donators, &(current_thread->donation_elem), compare_donation_priority, 0);
+    donate_priority();
+  }
   sema_down(&lock->semaphore);
+
+  current_thread->waiting_for = NULL;
   lock->holder = thread_current();
 }
 
@@ -226,6 +236,7 @@ void lock_release(struct lock *lock)
   ASSERT(lock != NULL);
   ASSERT(lock_held_by_current_thread(lock));
 
+  free_donators(&lock->semaphore.waiters, lock->holder);
   lock->holder = NULL;
   sema_up(&lock->semaphore);
 }

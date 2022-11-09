@@ -77,6 +77,54 @@ bool thread_compare_priority(const struct list_elem *left, const struct list_ele
          list_entry(right, struct thread, elem)->priority;
 }
 
+bool compare_donation_priority(const struct list_elem *left, const struct list_elem *right, void *aux UNUSED)
+{
+  return list_entry(left, struct thread, donation_elem)->priority >
+         list_entry(right, struct thread, donation_elem)->priority;
+}
+
+void donate_priority(void)
+{
+  struct thread *current_thread = thread_current();
+  struct thread *next_thread;
+
+  for (int depth = 0; depth < 8; depth++)
+  {
+    if (!current_thread->waiting_for)
+      break;
+    next_thread = current_thread->waiting_for->holder;
+    next_thread->priority = current_thread->priority;
+    current_thread = next_thread;
+  }
+}
+
+void free_donators(struct list *waiters, struct thread *holder)
+{
+  struct list_elem *cur_waiter;
+  struct list_elem *cur_donator;
+  for (cur_waiter = list_begin(waiters); cur_waiter != list_end(waiters); cur_waiter = list_next(cur_waiter))
+  {
+    struct list *donators = &(holder->donators);
+    for (cur_donator = list_begin(donators); cur_donator != list_end(donators); cur_donator = list_next(cur_donator))
+    {
+      if (list_entry(cur_donator, struct thread, donation_elem) == list_entry(cur_waiter, struct thread, elem))
+      {
+        list_remove(cur_donator);
+        break;
+      }
+    }
+  }
+
+  if (list_size(&holder->donators) == 0)
+  {
+    thread_set_priority(holder->initial_priority);
+  }
+  else
+  {
+    thread_set_priority(list_entry(list_begin(&holder->donators), struct thread, donation_elem)->priority);
+  }
+}
+
 // Determine if the running thread or highest ready thread has higher priority
 // Yield if ready thread is higher
 void yield_to_highest(void)
@@ -321,7 +369,7 @@ void thread_yield(void)
 
   old_level = intr_disable();
   if (cur != idle_thread)
-  list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
+    list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
   // list_push_back(&ready_list, &cur->elem);
 
   cur->status = THREAD_READY;
@@ -348,7 +396,13 @@ void thread_foreach(thread_action_func *func, void *aux)
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void thread_set_priority(int new_priority)
 {
-  thread_current()->priority = new_priority;
+  struct thread *cur_thread = thread_current();
+  if (list_size(&cur_thread->donators) > 0 &&
+      list_entry(list_begin(&cur_thread->donators), struct thread, donation_elem)->priority >= new_priority)
+  {
+    return;
+  }
+  cur_thread->priority = new_priority;
   yield_to_highest();
 }
 
@@ -476,6 +530,10 @@ init_thread(struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *)t + PGSIZE;
   t->priority = priority;
   t->magic = THREAD_MAGIC;
+
+  t->waiting_for = NULL;
+  t->initial_priority = priority;
+  list_init(&(t->donators));
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);
@@ -633,4 +691,3 @@ void thread_wakeup(int64_t curTime)
   }
   intr_set_level(old_level);
 }
-

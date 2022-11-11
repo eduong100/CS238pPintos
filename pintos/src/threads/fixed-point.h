@@ -15,12 +15,12 @@ int int_to_fp(int n)
     return n * F;
 }
 
-int fp_to_int_floor(int x)
+int fp_to_int(int x)
 {
     return x / F;
 }
 
-int fp_to_int_roun(int x)
+int fp_to_int_round(int x)
 {
     if (x >= 0)
     {

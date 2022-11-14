@@ -152,7 +152,7 @@ int thread_get_load_avg(void);
 void thread_sleep(int64_t wakeupTime);
 void thread_wakeup(int64_t curTime);
 
-void mlfqs_calculate_priority(struct thread *t, void *aus UNUSED);
+void mlfqs_calculate_priority(struct thread *t, void *aux UNUSED);
 void mlfqs_calculate_recent_cpu(struct thread *t, void *aux UNUSED);
 void mlfqs_calculate_load_avg(void);
 void mlfqs_incremement_recent_cpu(void);

@@ -657,7 +657,7 @@ void thread_wakeup(int64_t curTime)
   intr_set_level(old_level);
 }
 
-void mlfqs_calculate_priority(struct thread *t, void *aus UNUSED)
+void mlfqs_calculate_priority(struct thread *t, void *aux UNUSED)
 {
   t->priority = 
   fp_to_int_round(

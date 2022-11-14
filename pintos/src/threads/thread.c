@@ -327,7 +327,7 @@ void thread_yield(void)
 
   old_level = intr_disable();
   if (cur != idle_thread)
-  list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
+    list_insert_ordered(&ready_list, &cur->elem, thread_compare_priority, 0);
   // list_push_back(&ready_list, &cur->elem);
 
   cur->status = THREAD_READY;
@@ -358,7 +358,9 @@ void thread_set_priority(int new_priority)
   {
     return;
   }
-  thread_current()->priority = new_priority;
+  // thread_current()->priority = new_priority;
+  thread_current()->init_priority = new_priority;
+  refresh_priority();
   yield_to_highest();
 }
 
@@ -499,6 +501,10 @@ init_thread(struct thread *t, const char *name, int priority)
       t->recent_cpu = thread_current()->recent_cpu;
     }
   } 
+
+  t->init_priority = priority;
+  list_init(&t->donations);
+  t->wait_on_lock = NULL;
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);
@@ -704,3 +710,63 @@ void mlfqs_incremement_recent_cpu(void)
   }
 }
 
+void donate_priority(void)
+{
+  int cnt = 0;
+  struct thread *t = thread_current();
+  int cur_priority = t->priority;
+
+  while (cnt < 9)
+  {
+    cnt++;
+    if (t->wait_on_lock == NULL)
+    {
+      break;
+    }
+
+    t = t->wait_on_lock->holder;
+    t->priority = cur_priority;
+  }
+}
+
+void remove_with_lock(struct lock *lock)
+{
+  struct thread *t = thread_current();
+  struct list_elem *e = list_begin(&t->donations);
+
+  for (e; e != list_end((&t->donations));)
+  {
+    struct thread *cur = list_entry(e, struct thread, donation_elem);
+    if (cur->wait_on_lock == lock)
+    {
+      e = list_remove(e);
+    }
+    else
+    {
+      e = list_next(e);
+    }
+  }
+}
+
+void refresh_priority(void)
+{
+  struct thread *curr = thread_current();
+  curr->priority = curr->init_priority;
+
+  if (list_empty(&curr->donations) == false)
+  {
+    int high = curr->priority;
+    struct list_elem *e;
+    for (e = list_begin(&curr->donations); e != list_end(&curr->donations); e = list_next(e))
+    {
+      int curPrio = list_entry(e, struct thread, donation_elem)->priority;
+      if (curPrio > high)
+        high = curPrio;
+    }
+
+    if (high > curr->priority)
+    {
+      curr->priority = high;
+    }
+  }
+}

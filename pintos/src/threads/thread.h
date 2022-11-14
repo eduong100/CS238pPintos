@@ -102,7 +102,10 @@ struct thread
    int nice;                  
    int recent_cpu;
 
-
+   int init_priority;
+   struct lock *wait_on_lock;
+   struct list donations;
+   struct list_elem donation_elem;
 #ifdef USERPROG
    /* Owned by userprog/process.c. */
    uint32_t *pagedir; /* Page directory. */
@@ -148,7 +151,6 @@ void thread_set_nice(int);
 int thread_get_recent_cpu(void);
 int thread_get_load_avg(void);
 
-
 void thread_sleep(int64_t wakeupTime);
 void thread_wakeup(int64_t curTime);
 
@@ -159,4 +161,8 @@ void mlfqs_incremement_recent_cpu(void);
 
 bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux);
 void yield_to_highest(void);
+
+void donate_priority(void);
+void remove_with_lock(struct lock *);
+void refresh_priority(void);
 #endif /* threads/thread.h */

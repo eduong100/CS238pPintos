@@ -161,6 +161,21 @@ timer_interrupt(struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick();
+
+  if (thread_mlfqs)
+  {
+    mlfqs_incremement_recent_cpu();
+    if (timer_ticks() %4 == 0)
+    {
+      thread_foreach(mlfqs_calculate_priority, NULL);
+    }
+    if (timer_ticks() % TIMER_FREQ == 0)
+    {
+      thread_foreach(mlfqs_calculate_recent_cpu, NULL);
+      mlfqs_calculate_load_avg();
+    }
+  }
+
   int64_t curTime = timer_ticks();
   thread_wakeup(curTime);
 }

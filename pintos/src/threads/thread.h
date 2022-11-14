@@ -24,6 +24,11 @@ typedef int tid_t;
 #define PRI_DEFAULT 31 /* Default priority. */
 #define PRI_MAX 63     /* Highest priority. */
 
+/* MFLQ definitions */
+#define NICE_DEFAULT 0
+#define RECENT_CPU_DEFAULT 0
+#define LOAD_AVG_DEFAULT 0
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -94,6 +99,8 @@ struct thread
    struct list_elem elem; /* List element. */
 
    int64_t wakeup_time;
+   int nice;                  
+   int recent_cpu;
 
    int init_priority;
    struct lock *wait_on_lock;
@@ -146,6 +153,11 @@ int thread_get_load_avg(void);
 
 void thread_sleep(int64_t wakeupTime);
 void thread_wakeup(int64_t curTime);
+
+void mlfqs_calculate_priority(struct thread *t, void *aux UNUSED);
+void mlfqs_calculate_recent_cpu(struct thread *t, void *aux UNUSED);
+void mlfqs_calculate_load_avg(void);
+void mlfqs_incremement_recent_cpu(void);
 
 bool thread_compare_priority(const struct list_elem *left, const struct list_elem *right, void *aux);
 void yield_to_highest(void);

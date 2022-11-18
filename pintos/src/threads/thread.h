@@ -25,7 +25,10 @@ typedef int tid_t;
 #define PRI_MAX 63     /* Highest priority. */
 
 /* MFLQ definitions */
+#define NICE_MIN -20
 #define NICE_DEFAULT 0
+#define NICE_MAX 20
+
 #define RECENT_CPU_DEFAULT 0
 #define LOAD_AVG_DEFAULT 0
 

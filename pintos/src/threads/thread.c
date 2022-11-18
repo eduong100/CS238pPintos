@@ -115,8 +115,6 @@ void thread_init(void)
   list_init(&all_list);
   list_init(&sleeping_threads);
 
-  // load_avg = LOAD_AVG_DEFAULT;
-
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread();
   init_thread(initial_thread, "main", PRI_DEFAULT);
@@ -373,6 +371,15 @@ int thread_get_priority(void)
 /* Sets the current thread's nice value to NICE. */
 void thread_set_nice(int nice UNUSED)
 {
+  if (nice < NICE_MIN)
+    {
+      nice = NICE_MIN;
+      }
+  else if (nice > NICE_MAX)
+    {
+      nice = NICE_MAX;
+      }
+
   thread_current()->nice = nice;
   mlfqs_calculate_priority(thread_current(), NULL);
   yield_to_highest();
@@ -670,6 +677,14 @@ void mlfqs_calculate_priority(struct thread *t, void *aux UNUSED)
           add_fp(
               int_to_fp((PRI_MAX - (t->nice * 2))),
               divide_mixed(t->recent_cpu, -4)));
+  if (t->priority < PRI_MIN)
+    {
+      t->priority = PRI_MIN;
+    }
+  else if (t->priority > PRI_MAX)
+    {
+      t->priority = PRI_MAX;
+    }
 }
 
 void mlfqs_calculate_recent_cpu(struct thread *t, void *aux UNUSED)

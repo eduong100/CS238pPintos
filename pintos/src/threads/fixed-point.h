@@ -5,8 +5,6 @@
 #include <inttypes.h>
 
 #define F (1 << 14)
-#define INT_MAX ((1 << 31) - 1)
-#define INT_MIN (-(1<<31))
 
 /* Below, x and y represent fixed point numbers. n represents an integer */
 
@@ -35,21 +33,6 @@ int fp_to_int_round(int x)
 int add_fp(int x, int y)
 {
     return x + y;
-}
-
-int subtract_fp(int x, int y)
-{
-    return x - y;
-}
-
-int add_mixed(int x, int n)
-{
-    return x + n * F;
-}
-
-int subtract_mixed(int x, int n)
-{
-    return x - n * F;
 }
 
 int multiply_fp(int x, int y)

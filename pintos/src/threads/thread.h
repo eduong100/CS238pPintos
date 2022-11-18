@@ -103,7 +103,7 @@ struct thread
    int recent_cpu;
 
    int init_priority;
-   struct lock *wait_on_lock;
+   struct lock *blocking_lock;
    struct list donations;
    struct list_elem donation_elem;
 #ifdef USERPROG
@@ -163,6 +163,6 @@ bool thread_compare_priority(const struct list_elem *left, const struct list_ele
 void yield_to_highest(void);
 
 void donate_priority(void);
-void remove_with_lock(struct lock *);
+void remove_donations_with_lock(struct lock *);
 void refresh_priority(void);
 #endif /* threads/thread.h */

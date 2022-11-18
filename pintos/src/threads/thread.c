@@ -500,11 +500,11 @@ init_thread(struct thread *t, const char *name, int priority)
       t->nice = thread_current()->nice;
       t->recent_cpu = thread_current()->recent_cpu;
     }
-  } 
+  }
 
   t->init_priority = priority;
   list_init(&t->donations);
-  t->wait_on_lock = NULL;
+  t->blocking_lock = NULL;
 
   old_level = intr_disable();
   list_push_back(&all_list, &t->allelem);
@@ -665,22 +665,20 @@ void thread_wakeup(int64_t curTime)
 
 void mlfqs_calculate_priority(struct thread *t, void *aux UNUSED)
 {
-  t->priority = 
-  fp_to_int_round(
-    add_fp(
-      int_to_fp((PRI_MAX - (t->nice * 2))),
-      divide_mixed(t->recent_cpu, -4)
-    )
-  );
+  t->priority =
+      fp_to_int_round(
+          add_fp(
+              int_to_fp((PRI_MAX - (t->nice * 2))),
+              divide_mixed(t->recent_cpu, -4)));
 }
 
 void mlfqs_calculate_recent_cpu(struct thread *t, void *aux UNUSED)
 {
-  t->recent_cpu = 
-  multiply_fp(
-    divide_fp(2*load_avg, 2*load_avg+int_to_fp(1)), 
-    t->recent_cpu
-  ) + int_to_fp(t->nice);
+  t->recent_cpu =
+      multiply_fp(
+          divide_fp(2 * load_avg, 2 * load_avg + int_to_fp(1)),
+          t->recent_cpu) +
+      int_to_fp(t->nice);
 }
 
 void mlfqs_calculate_load_avg(void)
@@ -691,15 +689,12 @@ void mlfqs_calculate_load_avg(void)
     n_ready_threads += 1;
   }
 
-  load_avg = 
-  add_fp(
-    multiply_fp(
-      divide_fp(int_to_fp(59), int_to_fp(60)), load_avg
-    ),
-    multiply_mixed(
-      divide_fp(int_to_fp(1), int_to_fp(60)), n_ready_threads
-    )
-  );
+  load_avg =
+      add_fp(
+          multiply_fp(
+              divide_fp(int_to_fp(59), int_to_fp(60)), load_avg),
+          multiply_mixed(
+              divide_fp(int_to_fp(1), int_to_fp(60)), n_ready_threads));
 }
 
 void mlfqs_incremement_recent_cpu(void)
@@ -712,38 +707,38 @@ void mlfqs_incremement_recent_cpu(void)
 
 void donate_priority(void)
 {
-  int cnt = 0;
-  struct thread *t = thread_current();
-  int cur_priority = t->priority;
+  int ctr = 0;
+  struct thread *cur_thread = thread_current();
+  int cur_priority = cur_thread->priority;
 
-  while (cnt < 9)
+  while (ctr < 9)
   {
-    cnt++;
-    if (t->wait_on_lock == NULL)
+    if (cur_thread->blocking_lock == NULL)
     {
       break;
     }
 
-    t = t->wait_on_lock->holder;
-    t->priority = cur_priority;
+    cur_thread = cur_thread->blocking_lock->holder;
+    cur_thread->priority = cur_priority;
+    ctr++;
   }
 }
 
-void remove_with_lock(struct lock *lock)
+void remove_donations_with_lock(struct lock *lock)
 {
-  struct thread *t = thread_current();
-  struct list_elem *e = list_begin(&t->donations);
+  struct thread *running_thread = thread_current();
+  struct list_elem *cur_elem = list_begin(&running_thread->donations);
 
-  for (e; e != list_end((&t->donations));)
+  while (cur_elem != list_end((&running_thread->donations)))
   {
-    struct thread *cur = list_entry(e, struct thread, donation_elem);
-    if (cur->wait_on_lock == lock)
+    struct thread *cur_thread = list_entry(cur_elem, struct thread, donation_elem);
+    if (cur_thread->blocking_lock == lock)
     {
-      e = list_remove(e);
+      cur_elem = list_remove(cur_elem);
     }
     else
     {
-      e = list_next(e);
+      cur_elem = list_next(cur_elem);
     }
   }
 }
